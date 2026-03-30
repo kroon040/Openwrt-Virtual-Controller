@@ -21,6 +21,11 @@ Openwrt virtual controller
         └── bin/
             └── report_clients.sh
 
+
+
+
+
+
 After copying the files on that specific locations you will need to:
 
 Main AP:
@@ -33,8 +38,8 @@ AP Slaves:
 * #crontab -e and add * * * * * /usr/bin/report_clients.sh
 
 You should see on the main ap a new menu named Controller with an item named Wifi Clients.
-There you should see their statistics, filter by ssid, mac, etc...
+There you should see their statistics, filter by ip, hostname ,ssid, mac, etc...
 
        
-Have fun!
+
 
