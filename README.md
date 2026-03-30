@@ -1,7 +1,7 @@
 # Openwrt-Virtual-Controller
 Openwrt virtual controller
 
-.
+
 ├── Main AP / Router
 │   ├── usr/
 │   │   └── share/
