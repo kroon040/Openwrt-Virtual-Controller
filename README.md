@@ -2,7 +2,7 @@
 Openwrt virtual controller
 
 
-Main AP/
+On Main AP
 
 usr/share/luci/menu.d/luci-app-controller.json
 
@@ -13,7 +13,7 @@ usr/share/luci/menu.d/luci-app-controller.json
 
 
 
-Remote AP's
+On Remote AP's
 
 /usr/bin/report_clients.sh
 
