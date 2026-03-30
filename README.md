@@ -2,26 +2,13 @@
 Openwrt virtual controller
 
 
-├── Main AP / Router
-│   ├── usr/
-│   │   └── share/
-│   │       └── luci/
-│   │           └── menu.d/
-│   │               └── luci-app-controller.json
-│   └── www/
-│       ├── cgi-bin/
-│       │   └── get_clients
-│       └── luci-static/
-│           └── resources/
-│               └── view/
-│                   └── controller/
-│                       └── clients_dashboard.js
-└── AP Slaves
-    └── usr/
-        └── bin/
-            └── report_clients.sh
+Main AP
+/usr/share/luci/menu.d/luci-app-controller.json
+/www/cgi-bin/get_clients
+/www/luci-static/resources/view/controller/clients_dashboard.js
 
-
+Remote AP's
+/usr/bin/report_clients.sh
 
 
 
