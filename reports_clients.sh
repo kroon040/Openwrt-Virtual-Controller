@@ -3,7 +3,7 @@
 # IP address of the main ap
 PRINCIPAL_AP_IP="192.168.199.110"
 # Specity wifi interfaces to monitor, separated by space
-INTERFACES_TO_CHECK="phy0-ap0-vl10 phy0-ap0-vl70 phy1-ap0-vl70 phy1-ap0-vl10 phy1-ap1"
+INTERFACES_TO_CHECK="phy0-ap0-vl10 phy0-ap0-vl70 phy1-ap0-vl70 phy1-ap0-vl10"
 # --------------------
 MY_AP_NAME=$(uci -q get system.@system[0].hostname)
 POST_URL="http://${PRINCIPAL_AP_IP}/cgi-bin/get_clients"
@@ -21,9 +21,14 @@ for iface in $INTERFACES_TO_CHECK; do
         if [ "$FREQ_MHZ" -gt 3000 ]; then BAND="5G"; else BAND="2.4G"; fi
     fi
     SSID_NAME="($iface)"
-    SECTION_ID=$(uci show wireless | grep "\.ifname='$iface'" | sed 's/\.ifname=.*//')
-    if [ -n "$SECTION_ID" ]; then
-        SSID_NAME=$(uci -q get "${SECTION_ID}.ssid" || echo "($iface)")
+    VLAN_NAME=$(echo "$iface" | sed 's/.*-//')
+    VLAN_SECTION=$(uci show wireless | grep "wifi-vlan.*\.name='${VLAN_NAME}'" | sed 's/\.name=.*//' | sed 's/wireless\.//')
+    if [ -n "$VLAN_SECTION" ]; then
+        NETWORK=$(uci -q get "wireless.${VLAN_SECTION}.network")
+        WIFINET=$(uci show wireless | grep "wifinet.*\.network='${NETWORK}'" | sed 's/\.network=.*//' | sed 's/wireless\.//')
+        if [ -n "$WIFINET" ]; then
+            SSID_NAME=$(uci -q get "wireless.${WIFINET}.ssid" || echo "($iface)")
+        fi
     fi
     CLIENTS_ON_THIS_IFACE=$(iw dev "$iface" station dump | awk -v ap_name="$MY_AP_NAME" -v iface_name="$iface" -v band="$BAND" -v ssid="$SSID_NAME" -v ethers="$ETHERS" '
         BEGIN {
@@ -73,4 +78,3 @@ if [ -n "$ALL_CLIENTS_JSON" ]; then
     JSON_DATA="[${ALL_CLIENTS_JSON}]"
     wget -q -O - --post-data="$JSON_DATA" "$POST_URL" >/dev/null
 fi
-
