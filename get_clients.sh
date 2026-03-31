@@ -24,9 +24,14 @@ DEDUPLICATED_JSON=$( \
                 if [ "$FREQ_MHZ" -gt 3000 ]; then BAND="5G"; else BAND="2.4G"; fi
             fi
             SSID_NAME="($iface)"
-            SECTION_ID=$(uci show wireless | grep "\.ifname='$iface'" | sed 's/\.ifname=.*//')
-            if [ -n "$SECTION_ID" ]; then
-                SSID_NAME=$(uci -q get "${SECTION_ID}.ssid" || echo "($iface)")
+            VLAN_NAME=$(echo "$iface" | sed 's/.*-//')
+            VLAN_SECTION=$(uci show wireless | grep "wifi-vlan.*\.name='${VLAN_NAME}'" | sed 's/\.name=.*//' | sed 's/wireless\.//')
+            if [ -n "$VLAN_SECTION" ]; then
+                NETWORK=$(uci -q get "wireless.${VLAN_SECTION}.network")
+                WIFINET=$(uci show wireless | grep "wifinet.*\.network='${NETWORK}'" | sed 's/\.network=.*//' | sed 's/wireless\.//')
+                if [ -n "$WIFINET" ]; then
+                    SSID_NAME=$(uci -q get "wireless.${WIFINET}.ssid" || echo "($iface)")
+                fi
             fi
             iw dev "$iface" station dump | awk -v ap_name="$MY_AP_NAME" -v iface_name="$iface" -v band="$BAND" -v ssid="$SSID_NAME" -v ethers="$ETHERS" '
                 BEGIN {
