@@ -27,6 +27,14 @@ function getSignalClass(signalStr) {
     return 'signal-weak';
 }
 
+function getWifiVerColor(ver) {
+    if (ver === 'WiFi7') return '#6f42c1';
+    if (ver === 'WiFi6') return '#28a745';
+    if (ver === 'WiFi5') return '#17a2b8';
+    if (ver === 'WiFi4') return '#fd7e14';
+    return '#6c757d';
+}
+
 return view.extend({
     load: function() {
         return request.get('/cgi-bin/get_clients');
@@ -72,6 +80,7 @@ return view.extend({
                 E('th', { 'style': thStyle }, _('Hostname')),
                 E('th', { 'style': thStyle }, _('Station')),
                 E('th', { 'style': thStyle }, _('SSID')),
+                E('th', { 'style': thStyle }, _('WiFi')),
                 E('th', { 'style': thStyle }, _('Band')),
                 E('th', { 'style': thStyle }, _('Signal')),
                 E('th', { 'style': thStyle }, _('RX / TX Rate')),
@@ -109,10 +118,10 @@ return view.extend({
                     client.ip       || '',
                     client.hostname || '',
                     client.ssid     || '',
+                    client.wifi_ver || '',
                     client.band     || '',
                     client.signal   || '',
-                    client.ap       || '',
-                    client.iface    || ''
+                    client.ap       || ''
                 ].join(' ').toLowerCase();
                 
                 return searchText.includes(filterText);
@@ -123,7 +132,7 @@ return view.extend({
             if (filteredClients.length === 0) {
                 var noResultsRow = E('tr', {}, [
                     E('td', { 
-                        'colspan': '10',
+                        'colspan': '11',
                         'style': 'padding: 20px; text-align: center; color: #666; border: 1px solid #ddd;'
                     }, _('No matching clients found.'))
                 ]);
@@ -136,6 +145,7 @@ return view.extend({
                 var ip       = client.ip       || '';
                 var hostname = client.hostname || '';
                 var ssid     = client.ssid     || 'N/A';
+                var wifiVer  = client.wifi_ver || '';
                 var band     = client.band     || 'N/A';
                 var signal   = client.signal   || 'N/A';
                 var rxRate   = client.rx_rate  || 'N/A';
@@ -149,10 +159,8 @@ return view.extend({
                                 : signalClass === 'signal-medium' ? '#ffc107'
                                 : '#dc3545';
 
-                var bandColor = band === '5G' ? '#6f42c1' : '#17a2b8';
-
-                var stationCell = E('td', { 'style': tdStyle + ' font-family: monospace; font-size: 0.92em;' });
-                stationCell.textContent = mac;
+                var bandColor    = band === '5G' ? '#6f42c1' : '#17a2b8';
+                var wifiVerColor = getWifiVerColor(wifiVer);
 
                 var ipCell = E('td', { 'style': tdStyle + ' font-family: monospace; font-size: 0.92em;' });
                 ipCell.textContent = ip;
@@ -160,10 +168,19 @@ return view.extend({
                 var hostnameCell = E('td', { 'style': tdStyle + ' font-weight: 500;' });
                 hostnameCell.textContent = hostname;
 
-                var ssidCell   = E('td', { 'style': tdStyle });
+                var stationCell = E('td', { 'style': tdStyle + ' font-family: monospace; font-size: 0.92em;' });
+                stationCell.textContent = mac;
+
+                var ssidCell = E('td', { 'style': tdStyle });
                 ssidCell.textContent = ssid;
 
-                var bandCell   = E('td', { 'style': tdStyle }, [
+                var wifiVerCell = E('td', { 'style': tdStyle }, [
+                    E('span', {
+                        'style': 'display: inline-block; padding: 3px 8px; font-size: 12px; font-weight: bold; background: ' + wifiVerColor + '; color: white; border-radius: 4px;'
+                    }, wifiVer)
+                ]);
+
+                var bandCell = E('td', { 'style': tdStyle }, [
                     E('span', {
                         'style': 'display: inline-block; padding: 3px 8px; font-size: 12px; font-weight: bold; background: ' + bandColor + '; color: white; border-radius: 4px;'
                     }, band)
@@ -172,16 +189,16 @@ return view.extend({
                 var signalCell = E('td', { 'style': tdStyle + ' color: ' + signalColor + ';' });
                 signalCell.textContent = signal;
 
-                var rateCell   = E('td', { 'style': tdStyle });
+                var rateCell = E('td', { 'style': tdStyle });
                 rateCell.textContent = rxRate + ' / ' + txRate;
 
-                var dataCell   = E('td', { 'style': tdStyle });
+                var dataCell = E('td', { 'style': tdStyle });
                 dataCell.textContent = formatBytes(totalData);
 
-                var timeCell   = E('td', { 'style': tdStyle });
+                var timeCell = E('td', { 'style': tdStyle });
                 timeCell.textContent = formatUptime(connTime);
 
-                var apCell     = E('td', { 'style': tdStyle + ' font-weight: 500;' });
+                var apCell = E('td', { 'style': tdStyle + ' font-weight: 500;' });
                 apCell.textContent = ap;
 
                 var row = E('tr', {
@@ -194,6 +211,7 @@ return view.extend({
                 row.appendChild(hostnameCell);
                 row.appendChild(stationCell);
                 row.appendChild(ssidCell);
+                row.appendChild(wifiVerCell);
                 row.appendChild(bandCell);
                 row.appendChild(signalCell);
                 row.appendChild(rateCell);

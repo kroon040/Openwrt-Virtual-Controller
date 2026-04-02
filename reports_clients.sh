@@ -44,25 +44,31 @@ for iface in $INTERFACES_TO_CHECK; do
         }
         {
             if (NR == 1) { next }
-            mac = sig = rx = tx = "";
+            mac = sig = rx = tx = wifi_ver = "";
             conn_time = rx_bytes = tx_bytes = 0;
             mac = $1;
             sub(/^[ \t]+/, "", mac); sub(/ \(on.*\)/, "", mac);
             for (i=2; i<=NF; i++) {
-                if ($i ~ /signal:/) { sig = $i; sub(/^.*signal:[\t ]*/, "", sig); sub(/ .*/, "", sig); sig = sig " dBm"; }
-                if ($i ~ /rx bitrate:/) { rx = $i; sub(/^.*rx bitrate:[\t ]*/, "", rx); sub(/ .*/, "", rx); sub(/\..*/, "", rx); rx = rx "Mbps"; }
-                if ($i ~ /tx bitrate:/) { tx = $i; sub(/^.*tx bitrate:[\t ]*/, "", tx); sub(/ .*/, "", tx); sub(/\..*/, "", tx); tx = tx "Mbps"; }
+                if ($i ~ /signal:/)        { sig = $i; sub(/^.*signal:[\t ]*/, "", sig); sub(/ .*/, "", sig); sig = sig " dBm"; }
+                if ($i ~ /rx bitrate:/)     { rx = $i; sub(/^.*rx bitrate:[\t ]*/, "", rx); sub(/ .*/, "", rx); sub(/\..*/, "", rx); rx = rx "Mbps"; }
+                if ($i ~ /tx bitrate:/)     { tx = $i; sub(/^.*tx bitrate:[\t ]*/, "", tx); sub(/ .*/, "", tx); sub(/\..*/, "", tx); tx = tx "Mbps"; }
                 if ($i ~ /connected time:/) { conn_time = $i; sub(/^.*connected time:[\t ]*/, "", conn_time); sub(/ .*/, "", conn_time); }
-                if ($i ~ /rx bytes:/) { rx_bytes = $i; sub(/^.*rx bytes:[\t ]*/, "", rx_bytes); }
-                if ($i ~ /tx bytes:/) { tx_bytes = $i; sub(/^.*tx bytes:[\t ]*/, "", tx_bytes); }
+                if ($i ~ /rx bytes:/)       { rx_bytes = $i; sub(/^.*rx bytes:[\t ]*/, "", rx_bytes); }
+                if ($i ~ /tx bytes:/)       { tx_bytes = $i; sub(/^.*tx bytes:[\t ]*/, "", tx_bytes); }
+                # WiFi version detection based on bitrate modulation flags
+                if ($i ~ /EHT-MCS/) wifi_ver = "WiFi7";
+                else if ($i ~ /HE-MCS/  && wifi_ver == "") wifi_ver = "WiFi6";
+                else if ($i ~ /VHT-MCS/ && wifi_ver == "") wifi_ver = "WiFi5";
+                else if ($i ~ /HT-MCS/  && wifi_ver == "") wifi_ver = "WiFi4";
             }
+            if (wifi_ver == "") wifi_ver = "Legacy";
             if (mac != "") {
                 gsub(/\t/, "", mac); gsub(/\t/, "", sig); gsub(/\t/, "", rx); gsub(/\t/, "", tx);
                 mac_lower = tolower(mac);
                 client_ip   = (mac_lower in ethers_ip)   ? ethers_ip[mac_lower]   : "";
                 client_host = (mac_lower in ethers_host) ? ethers_host[mac_lower] : "";
-                printf "%s{\"mac\":\"%s\", \"ssid\":\"%s\", \"signal\":\"%s\", \"conn_time\":%s, \"rx_rate\":\"%s\", \"tx_rate\":\"%s\", \"total_data\":%d, \"ap\":\"%s\", \"iface\":\"%s\", \"band\":\"%s\", \"ip\":\"%s\", \"hostname\":\"%s\"}", \
-                comma, mac, ssid, sig, conn_time, rx, tx, (rx_bytes+tx_bytes), ap_name, iface_name, band, client_ip, client_host;
+                printf "%s{\"mac\":\"%s\", \"ssid\":\"%s\", \"signal\":\"%s\", \"conn_time\":%s, \"rx_rate\":\"%s\", \"tx_rate\":\"%s\", \"total_data\":%d, \"ap\":\"%s\", \"iface\":\"%s\", \"band\":\"%s\", \"ip\":\"%s\", \"hostname\":\"%s\", \"wifi_ver\":\"%s\"}", \
+                comma, mac, ssid, sig, conn_time, rx, tx, (rx_bytes+tx_bytes), ap_name, iface_name, band, client_ip, client_host, wifi_ver;
                 comma = ",";
             }
         }
