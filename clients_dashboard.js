@@ -57,22 +57,43 @@ return view.extend({
             clients = [];
         }
 
+        /* ── Responsive CSS ── */
+        var styleEl = document.getElementById('wcd-style');
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'wcd-style';
+            styleEl.textContent = [
+                /* Mobile: cards */
+                '@media (max-width: 768px) {',
+                '  #wcd-table thead { display: none; }',
+                '  #wcd-table, #wcd-table tbody, #wcd-table tr, #wcd-table td { display: block; width: 100%; box-sizing: border-box; }',
+                '  #wcd-table tr { border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; padding: 4px 0; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }',
+                '  #wcd-table td { border: none; border-bottom: 1px solid #f0f0f0; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; min-height: 36px; }',
+                '  #wcd-table td:last-child { border-bottom: none; }',
+                '  #wcd-table td::before { content: attr(data-label); font-weight: 600; font-size: 0.78em; color: #888; text-transform: uppercase; letter-spacing: 0.04em; flex-shrink: 0; margin-right: 10px; }',
+                '  #wcd-table td[data-label=""]::before { display: none; }',
+                '  #wcd-wrap { overflow-x: visible; }',
+                '}',
+                /* Desktop: normal table */
+                '@media (min-width: 769px) {',
+                '  #wcd-table { width: 100%; border-collapse: collapse; }',
+                '  #wcd-table th, #wcd-table td { padding: 8px 12px; border: 1px solid #ddd; vertical-align: middle; }',
+                '  #wcd-table th { text-align: left; }',
+                '  #wcd-table tr:hover td { background-color: #f8f9fa; }',
+                '}'
+            ].join('\n');
+            document.head.appendChild(styleEl);
+        }
+
         var filterInput = E('input', {
             'type': 'text',
             'placeholder': _('Filter by MAC, IP, hostname, SSID, AP, etc...'),
-            'style': 'width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;'
+            'style': 'width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;'
         });
 
-        var tableContainer = E('div', {
-            'style': 'overflow-x: auto; margin-bottom: 15px;'
-        });
-
-        var table = E('table', {
-            'class': 'table',
-            'style': 'width: 100%; border-collapse: collapse;'
-        });
-
-        var thStyle = 'padding: 12px; border: 1px solid #ddd; text-align: left;';
+        var tableContainer = E('div', { 'id': 'wcd-wrap', 'style': 'overflow-x: auto; margin-bottom: 15px;' });
+        var table          = E('table', { 'id': 'wcd-table', 'class': 'table' });
+        var thStyle        = '';
 
         var tableHeader = E('thead', {}, [
             E('tr', {}, [
@@ -91,16 +112,11 @@ return view.extend({
         ]);
 
         var tableBody = E('tbody', {});
-
         table.appendChild(tableHeader);
         table.appendChild(tableBody);
         tableContainer.appendChild(table);
 
-        var lastUpdatedElem = E('p', {
-            'style': 'font-style: italic; color: #666; margin-top: 15px;'
-        });
-
-        var tdStyle = 'padding: 8px 12px; border: 1px solid #ddd; vertical-align: middle;';
+        var lastUpdatedElem = E('p', { 'style': 'font-style: italic; color: #666; margin-top: 15px;' });
 
         var clientCountElem = E('span', {
             'style': 'margin-left: 12px; padding: 3px 10px; font-size: 14px; font-weight: normal; background: #17a2b8; color: white; border-radius: 12px; vertical-align: middle;'
@@ -112,7 +128,6 @@ return view.extend({
             var filterText = filterInput.value.toLowerCase().trim();
             var filteredClients = clientList.filter(function(client) {
                 if (!filterText) return true;
-                
                 var searchText = [
                     client.mac      || '',
                     client.ip       || '',
@@ -123,109 +138,76 @@ return view.extend({
                     client.signal   || '',
                     client.ap       || ''
                 ].join(' ').toLowerCase();
-                
                 return searchText.includes(filterText);
             });
 
             clientCountElem.textContent = filteredClients.length;
 
             if (filteredClients.length === 0) {
-                var noResultsRow = E('tr', {}, [
-                    E('td', { 
-                        'colspan': '11',
-                        'style': 'padding: 20px; text-align: center; color: #666; border: 1px solid #ddd;'
-                    }, _('No matching clients found.'))
-                ]);
-                tableBody.appendChild(noResultsRow);
+                tableBody.appendChild(E('tr', {}, [
+                    E('td', { 'colspan': '11', 'style': 'padding: 20px; text-align: center; color: #666; border: 1px solid #ddd;' },
+                        _('No matching clients found.'))
+                ]));
                 return;
             }
 
             filteredClients.forEach(function(client) {
-                var mac      = client.mac      || 'N/A';
-                var ip       = client.ip       || '';
-                var hostname = client.hostname || '';
-                var ssid     = client.ssid     || 'N/A';
-                var wifiVer  = client.wifi_ver || '';
-                var band     = client.band     || 'N/A';
-                var signal   = client.signal   || 'N/A';
-                var rxRate   = client.rx_rate  || 'N/A';
-                var txRate   = client.tx_rate  || 'N/A';
-                var totalData = client.total_data || 0;
-                var connTime  = client.conn_time  || 0;
-                var ap       = client.ap       || 'N/A';
+                var mac       = client.mac          || 'N/A';
+                var ip        = client.ip           || '';
+                var hostname  = client.hostname     || '';
+                var ssid      = client.ssid         || 'N/A';
+                var wifiVer   = client.wifi_ver     || '';
+                var band      = client.band         || 'N/A';
+                var signal    = client.signal       || 'N/A';
+                var rxRate    = client.rx_rate      || 'N/A';
+                var txRate    = client.tx_rate      || 'N/A';
+                var totalData = client.total_data   || 0;
+                var connTime  = client.conn_time    || 0;
+                var ap        = client.ap           || 'N/A';
 
                 var signalClass = getSignalClass(signal);
                 var signalColor = signalClass === 'signal-strong' ? '#28a745'
                                 : signalClass === 'signal-medium' ? '#ffc107'
                                 : '#dc3545';
-
                 var bandColor    = band === '5G' ? '#6f42c1' : '#17a2b8';
                 var wifiVerColor = getWifiVerColor(wifiVer);
 
-                var ipCell = E('td', { 'style': tdStyle + ' font-family: monospace; font-size: 0.92em;' });
-                ipCell.textContent = ip;
+                function td(label, content, extraStyle) {
+                    var cell = E('td', { 'data-label': label, 'style': extraStyle || '' });
+                    if (typeof content === 'string' || typeof content === 'number') {
+                        cell.textContent = content;
+                    } else {
+                        cell.appendChild(content);
+                    }
+                    return cell;
+                }
 
-                var hostnameCell = E('td', { 'style': tdStyle + ' font-weight: 500;' });
-                hostnameCell.textContent = hostname;
+                function badge(text, color) {
+                    return E('span', {
+                        'style': 'display:inline-block; padding:3px 8px; font-size:12px; font-weight:bold; background:' + color + '; color:white; border-radius:4px;'
+                    }, text);
+                }
 
-                var stationCell = E('td', { 'style': tdStyle + ' font-family: monospace; font-size: 0.92em;' });
-                stationCell.textContent = mac;
+                var row = E('tr', {});
 
-                var ssidCell = E('td', { 'style': tdStyle });
-                ssidCell.textContent = ssid;
+                row.appendChild(td('IP Address',      ip,                          'font-family:monospace; font-size:0.92em;'));
+                row.appendChild(td('Hostname',        hostname,                    'font-weight:500;'));
+                row.appendChild(td('Station',         mac,                         'font-family:monospace; font-size:0.92em;'));
+                row.appendChild(td('SSID',            ssid));
+                row.appendChild(td('WiFi',            badge(wifiVer, wifiVerColor)));
+                row.appendChild(td('Band',            badge(band, bandColor)));
+                row.appendChild(td('Signal',          signal,                      'color:' + signalColor + ';'));
+                row.appendChild(td('RX / TX Rate',    rxRate + ' / ' + txRate));
+                row.appendChild(td('Total Data',      formatBytes(totalData)));
+                row.appendChild(td('Connected Time',  formatUptime(connTime)));
+                row.appendChild(td('AP',              ap,                          'font-weight:500;'));
 
-                var wifiVerCell = E('td', { 'style': tdStyle }, [
-                    E('span', {
-                        'style': 'display: inline-block; padding: 3px 8px; font-size: 12px; font-weight: bold; background: ' + wifiVerColor + '; color: white; border-radius: 4px;'
-                    }, wifiVer)
-                ]);
-
-                var bandCell = E('td', { 'style': tdStyle }, [
-                    E('span', {
-                        'style': 'display: inline-block; padding: 3px 8px; font-size: 12px; font-weight: bold; background: ' + bandColor + '; color: white; border-radius: 4px;'
-                    }, band)
-                ]);
-
-                var signalCell = E('td', { 'style': tdStyle + ' color: ' + signalColor + ';' });
-                signalCell.textContent = signal;
-
-                var rateCell = E('td', { 'style': tdStyle });
-                rateCell.textContent = rxRate + ' / ' + txRate;
-
-                var dataCell = E('td', { 'style': tdStyle });
-                dataCell.textContent = formatBytes(totalData);
-
-                var timeCell = E('td', { 'style': tdStyle });
-                timeCell.textContent = formatUptime(connTime);
-
-                var apCell = E('td', { 'style': tdStyle + ' font-weight: 500;' });
-                apCell.textContent = ap;
-
-                var row = E('tr', {
-                    'style': 'border-bottom: 1px solid #ddd; transition: background-color 0.2s ease;',
-                    'onmouseover': function() { this.style.backgroundColor = '#f8f9fa'; this.style.cursor = 'pointer'; },
-                    'onmouseout':  function() { this.style.backgroundColor = ''; this.style.cursor = 'default'; }
-                });
-
-                row.appendChild(ipCell);
-                row.appendChild(hostnameCell);
-                row.appendChild(stationCell);
-                row.appendChild(ssidCell);
-                row.appendChild(wifiVerCell);
-                row.appendChild(bandCell);
-                row.appendChild(signalCell);
-                row.appendChild(rateCell);
-                row.appendChild(dataCell);
-                row.appendChild(timeCell);
-                row.appendChild(apCell);
                 tableBody.appendChild(row);
             });
         };
 
-        filterInput.addEventListener('input', function() {
-            populateTable(clients);
-        });
-        
+        filterInput.addEventListener('input', function() { populateTable(clients); });
+
         populateTable(clients);
         lastUpdatedElem.textContent = _('Last updated') + ': ' + new Date().toLocaleTimeString();
 
@@ -252,17 +234,15 @@ return view.extend({
             });
         }, 5);
 
-        var mainContainer = E('div', { 'class': 'cbi-map' }, [
+        return E('div', { 'class': 'cbi-map' }, [
             E('h2', {}, [ _('Wireless Clients Dashboard'), clientCountElem ]),
             filterInput,
             tableContainer,
             lastUpdatedElem
         ]);
-
-        return mainContainer;
     },
 
-    handleSaveApply: null, 
-    handleSave: null, 
+    handleSaveApply: null,
+    handleSave: null,
     handleReset: null
 });
